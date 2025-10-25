@@ -63,8 +63,45 @@ curl -X POST http://localhost:3000/convert \
 - Bun
 - FFmpeg
 
+## Deployment
+
+### Docker
+
+Build and run:
+```bash
+docker build -t audio-converter .
+docker run -p 3000:3000 -e API_KEY=your_secret_api_key audio-converter
+```
+
+Or use Docker Compose:
+```yaml
+version: '3.8'
+services:
+  audio-converter:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - API_KEY=your_secret_api_key
+      - PORT=3000
+```
+
+### Dokploy
+
+1. Create a new application in Dokploy
+
+2. In the application settings:
+   - **Build Type**: Select "Dockerfile"
+
+3. Set environment variables:
+   - `API_KEY`: your_secret_api_key
+   - `PORT`: (automatically set by Dokploy)
+
+4. Deploy from your Git repository
+
 ## Notes
 
 - File type detection uses magic headers (not file extensions)
 - Pure in-memory streaming (no disk writes)
 - All other endpoints and methods return 404
+- PORT environment variable is automatically set by Dokploy
