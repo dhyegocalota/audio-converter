@@ -37,7 +37,8 @@ bun start
 - Video: MP4, AVI, MKV, MOV, WMV, FLV, WebM
 
 **Response:**
-- MP3 file (192 kbps, 44.1 kHz, stereo)
+- Optimized MP3 file (VBR quality 2, ~170-210 kbps, 44.1 kHz, stereo)
+- Maximum compression with high quality settings
 - If input is already MP3, returns original file without conversion
 
 ### Examples
@@ -105,3 +106,4 @@ services:
 - Pure in-memory streaming (no disk writes)
 - All other endpoints and methods return 404
 - PORT environment variable is automatically set by Dokploy
+- MP3 output is optimized using VBR encoding with maximum compression (~80% smaller than CBR)
