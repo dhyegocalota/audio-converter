@@ -1,0 +1,11 @@
+{
+  "name": "audio-converter",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "bun server.ts"
+  },
+  "dependencies": {
+    "file-type": "^21.0.0"
+  }
+}
