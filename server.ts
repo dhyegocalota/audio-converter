@@ -30,8 +30,8 @@ if (!API_KEY) {
 function generateOutputFilename(inputFilename: string): string {
   const lastDotIndex = inputFilename.lastIndexOf(".");
   return lastDotIndex > 0
-    ? inputFilename.substring(0, lastDotIndex) + ".mp3"
-    : inputFilename + ".mp3";
+    ? inputFilename.substring(0, lastDotIndex) + ".m4a"
+    : inputFilename + ".m4a";
 }
 
 const server = Bun.serve({
@@ -86,18 +86,18 @@ const server = Bun.serve({
 
       const outputFilename = generateOutputFilename(file.name);
 
-      if (fileType.mime === "audio/mpeg" || fileType.mime === "audio/mp3") {
+      if (fileType.mime === "audio/x-m4a") {
         const duration = Date.now() - startTime;
-        console.log(`200 MP3 passthrough - ${file.name} (${duration}ms)`);
+        console.log(`200 M4A passthrough - ${file.name} (${duration}ms)`);
         return new Response(inputBuffer, {
           headers: {
-            "Content-Type": "audio/mpeg",
+            "Content-Type": "audio/mp4",
             "Content-Disposition": `attachment; filename="${outputFilename}"`,
           },
         });
       }
 
-      console.log(`Converting ${fileType.mime} to MP3...`);
+      console.log(`Converting ${fileType.mime} to M4A (AAC)...`);
 
       const process = Bun.spawn([
         "ffmpeg",
@@ -108,14 +108,14 @@ const server = Bun.serve({
         "44100",
         "-ac",
         "2",
-        "-q:a",
-        "2",
-        "-compression_level",
-        "9",
-        "-id3v2_version",
-        "3",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "128k",
+        "-movflags",
+        "+frag_keyframe+empty_moov+default_base_moof",
         "-f",
-        "mp3",
+        "mp4",
         "pipe:1",
       ], {
         stdin: "pipe",
@@ -127,10 +127,12 @@ const server = Bun.serve({
       process.stdin.end();
 
       const output = await new Response(process.stdout).arrayBuffer();
+      const stderrOutput = await new Response(process.stderr).text();
       await process.exited;
 
       if (process.exitCode !== 0) {
         console.log(`500 Conversion failed - Exit code: ${process.exitCode}`);
+        console.error(`FFmpeg stderr: ${stderrOutput}`);
         return new Response("Conversion failed", { status: 500 });
       }
 
@@ -143,7 +145,7 @@ const server = Bun.serve({
 
       return new Response(output, {
         headers: {
-          "Content-Type": "audio/mpeg",
+          "Content-Type": "audio/mp4",
           "Content-Disposition": `attachment; filename="${outputFilename}"`,
         },
       });

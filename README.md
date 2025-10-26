@@ -1,6 +1,6 @@
 # Audio Converter
 
-Simple HTTP API to convert audio/video files to MP3.
+Simple HTTP API to convert audio/video files to M4A (AAC).
 
 ## Setup
 
@@ -37,26 +37,27 @@ bun start
 - Video: MP4, AVI, MKV, MOV, WMV, FLV, WebM
 
 **Response:**
-- Optimized MP3 file (VBR quality 2, ~170-210 kbps, 44.1 kHz, stereo)
-- Maximum compression with high quality settings
-- If input is already MP3, returns original file without conversion
+- Optimized M4A file (AAC codec, 128 kbps, 44.1 kHz, stereo)
+- Better compression and quality compared to MP3
+- WhatsApp-optimized format for voice messages
+- If input is already M4A, returns original file without conversion
 
 ### Examples
 
-Convert MP4 to MP3:
+Convert MP4 to M4A:
 ```bash
 curl -X POST http://localhost:3000/convert \
   -H "x-api-key: your_secret_api_key" \
   -F "file=@video.mp4" \
-  --output audio.mp3
+  --output audio.m4a
 ```
 
-Convert WAV to MP3:
+Convert WAV to M4A:
 ```bash
 curl -X POST http://localhost:3000/convert \
   -H "x-api-key: your_secret_api_key" \
   -F "file=@audio.wav" \
-  --output audio.mp3
+  --output audio.m4a
 ```
 
 ## Requirements
@@ -106,4 +107,6 @@ services:
 - Pure in-memory streaming (no disk writes)
 - All other endpoints and methods return 404
 - PORT environment variable is automatically set by Dokploy
-- MP3 output is optimized using VBR encoding with maximum compression (~80% smaller than CBR)
+- M4A (AAC) provides ~30% better compression than MP3 at equivalent quality
+- Output uses fragmented MP4 format for efficient streaming
+- WhatsApp natively supports M4A for voice messages on all platforms
