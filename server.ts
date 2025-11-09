@@ -77,7 +77,10 @@ const server = Bun.serve({
       const inputBuffer = await file.arrayBuffer();
       const fileType = await fileTypeFromBuffer(new Uint8Array(inputBuffer));
 
-      if (!fileType || !AUDIO_VIDEO_MIME_TYPES.includes(fileType.mime)) {
+      const baseMimeType = fileType?.mime.split(';')[0].trim();
+      const isSupportedFormat = baseMimeType && AUDIO_VIDEO_MIME_TYPES.includes(baseMimeType);
+
+      if (!isSupportedFormat) {
         console.log(`400 Unsupported format: ${fileType?.mime || "unknown"}`);
         return new Response("Unsupported file format", { status: 400 });
       }
