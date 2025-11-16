@@ -102,10 +102,13 @@ const server = Bun.serve({
 
       console.log(`Converting ${fileType.mime} to MP3...`);
 
+      const tempInputPath = `/tmp/input-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      await Bun.write(tempInputPath, inputBuffer);
+
       const process = Bun.spawn([
         "ffmpeg",
         "-i",
-        "pipe:0",
+        tempInputPath,
         "-vn",
         "-ar",
         "44100",
@@ -121,35 +124,55 @@ const server = Bun.serve({
         "mp3",
         "pipe:1",
       ], {
-        stdin: "pipe",
         stdout: "pipe",
         stderr: "pipe",
       });
 
-      process.stdin.write(inputBuffer);
-      process.stdin.end();
+      const outputChunks: Uint8Array[] = [];
+      const reader = process.stdout.getReader();
 
-      const output = await new Response(process.stdout).arrayBuffer();
-      await process.exited;
+      const readStdout = (async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          outputChunks.push(value);
+        }
+      })();
 
-      if (process.exitCode !== 0) {
-        console.log(`500 Conversion failed - Exit code: ${process.exitCode}`);
-        return new Response("Conversion failed", { status: 500 });
+      try {
+        await Promise.all([readStdout, process.exited]);
+
+        if (process.exitCode !== 0) {
+          console.log(`500 Conversion failed - Exit code: ${process.exitCode}`);
+          return new Response("Conversion failed", { status: 500 });
+        }
+
+        const totalLength = outputChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        const output = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of outputChunks) {
+          output.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        const outputSize = (output.byteLength / 1024).toFixed(2);
+        const inputSize = (inputBuffer.byteLength / 1024).toFixed(2);
+        const reduction = Math.round((1 - output.byteLength / inputBuffer.byteLength) * 100);
+        const duration = Date.now() - startTime;
+
+        console.log(`200 Converted ${file.name} - ${inputSize}KB → ${outputSize}KB (${reduction}% reduction) in ${duration}ms`);
+
+        return new Response(output, {
+          headers: {
+            "Content-Type": "audio/mpeg",
+            "Content-Disposition": `attachment; filename="${outputFilename}"`,
+          },
+        });
+      } finally {
+        try {
+          await Bun.$`rm -f ${tempInputPath}`;
+        } catch {}
       }
-
-      const outputSize = (output.byteLength / 1024).toFixed(2);
-      const inputSize = (inputBuffer.byteLength / 1024).toFixed(2);
-      const reduction = Math.round((1 - output.byteLength / inputBuffer.byteLength) * 100);
-      const duration = Date.now() - startTime;
-
-      console.log(`200 Converted ${file.name} - ${inputSize}KB → ${outputSize}KB (${reduction}% reduction) in ${duration}ms`);
-
-      return new Response(output, {
-        headers: {
-          "Content-Type": "audio/mpeg",
-          "Content-Disposition": `attachment; filename="${outputFilename}"`,
-        },
-      });
     } catch (error) {
       const duration = Date.now() - startTime;
       console.error(`500 Internal error after ${duration}ms:`, error);
