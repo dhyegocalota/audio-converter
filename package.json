@@ -1,6 +1,24 @@
 {
   "name": "audio-converter",
   "version": "1.0.0",
+  "description": "Tiny self-hosted HTTP API that turns any audio or video file into a lightweight MP3, powered by Bun and FFmpeg.",
+  "license": "MIT",
+  "author": "Dhyego Calota",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dhyegocalota/audio-converter.git"
+  },
+  "keywords": [
+    "audio",
+    "mp3",
+    "ffmpeg",
+    "converter",
+    "bun",
+    "api",
+    "self-hosted",
+    "docker",
+    "transcoding"
+  ],
   "type": "module",
   "scripts": {
     "start": "bun server.ts"
